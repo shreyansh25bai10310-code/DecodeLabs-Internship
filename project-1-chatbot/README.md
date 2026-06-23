@@ -18,3 +18,12 @@ python chatbot.py
 ```
 
 ## Sample Interactions
+You: hello
+
+Friday: Hey there! I'm Friday. How can I help you today?
+You: what is ai
+
+Friday: AI is the simulation of human intelligence by machines using data and algorithms.
+You: joke
+
+Friday: Why do programmers prefer dark mode? Because light attracts bugs! 🐛
