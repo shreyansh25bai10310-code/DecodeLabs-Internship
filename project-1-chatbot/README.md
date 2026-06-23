@@ -1,4 +1,4 @@
-# Project 1 — Friday Rule-Based AI Chatbot
+# Project 1 — Friday Rule-Based AI Chatbot.
 
 **DecodeLabs AI Internship | Batch 2026**
 
