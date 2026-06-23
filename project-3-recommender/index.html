@@ -1,155 +1,253 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tech Career Navigator</title>
+<h2 class="sr-only">Tech Stack Recommender — enter your skills to get matched career paths using TF-IDF and cosine similarity</h2>
+
 <style>
-:root{
---bg:#09090b;
---card:#111113;
---border:#27272a;
---text:#fafafa;
---muted:#a1a1aa;
---primary:#4f8cff;
---secondary:#8b5cf6;
---radius:24px;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-font-family:Inter,system-ui,sans-serif;
-background:
-radial-gradient(circle at top left,rgba(79,140,255,.15),transparent 40%),
-radial-gradient(circle at bottom right,rgba(139,92,246,.12),transparent 40%),
-var(--bg);
-color:var(--text);
-padding:32px;
-}
-.container{max-width:1200px;margin:auto;background:rgba(17,17,19,.85);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.06);border-radius:28px;padding:32px}
-.hero{text-align:center;padding:30px 0 40px}
-.hero h1{font-size:56px;line-height:1.1}
-.hero span{background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;color:transparent}
-.hero p{color:var(--muted);margin-top:12px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}
-.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:18px}
-.stat{text-align:center}
-.stat h2{color:var(--primary)}
-.search{width:100%;padding:14px;border-radius:14px;background:var(--card);border:1px solid var(--border);color:white}
-.skills{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
-.chip{padding:10px 14px;border-radius:999px;border:1px solid var(--border);cursor:pointer;background:var(--card)}
-.chip.active{background:linear-gradient(135deg,var(--primary),var(--secondary));border:none}
-button.main{width:100%;padding:16px;margin-top:20px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;font-size:16px;cursor:pointer}
-#winner{display:none;margin-top:24px;padding:28px;border-radius:24px;background:linear-gradient(135deg,var(--primary),var(--secondary));text-align:center}
-.result{margin-top:16px}
-.role{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;margin-top:12px}
-.bar{height:8px;background:#222;border-radius:999px;overflow:hidden;margin-top:10px}
-.fill{height:100%;background:linear-gradient(135deg,var(--primary),var(--secondary))}
-@media(max-width:768px){.stats{grid-template-columns:1fr}.hero h1{font-size:38px}}
+  .rec-wrap { padding: 1.5rem 0; font-family: var(--font-sans); }
+  .rec-header { margin-bottom: 1.5rem; }
+  .rec-header h1 { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 4px; }
+  .rec-header p { font-size: 14px; color: var(--color-text-secondary); margin: 0; }
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .input-grid input { width: 100%; box-sizing: border-box; }
+  .skill-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; min-height: 28px; }
+  .pill { font-size: 12px; padding: 3px 10px; border-radius: 20px; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); cursor: pointer; background: var(--color-background-secondary); display: flex; align-items: center; gap: 5px; transition: background 0.15s; }
+  .pill:hover { background: var(--color-background-tertiary); }
+  .pill.selected { background: #E6F1FB; border-color: #85B7EB; color: #0C447C; }
+  .pill.selected .ti { color: #185FA5; }
+  .go-btn { width: 100%; padding: 10px; font-size: 15px; font-weight: 500; cursor: pointer; border-radius: var(--border-radius-md); }
+  .go-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .results { margin-top: 1.5rem; }
+  .result-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; transition: border-color 0.2s; }
+  .result-card.top { border: 1.5px solid #85B7EB; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .role-name { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
+  .score-badge { font-size: 12px; padding: 3px 10px; border-radius: 20px; background: #E6F1FB; color: #0C447C; font-weight: 500; }
+  .score-badge.top { background: #185FA5; color: #fff; }
+  .match-bar-wrap { margin-bottom: 8px; }
+  .match-bar-bg { background: var(--color-background-secondary); border-radius: 4px; height: 6px; overflow: hidden; }
+  .match-bar-fill { height: 100%; border-radius: 4px; background: #378ADD; transition: width 0.6s ease; }
+  .match-bar-fill.top { background: #185FA5; }
+  .matched-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+  .tag.match { background: #E6F1FB; color: #0C447C; border: 0.5px solid #B5D4F4; }
+  .tag.other { background: var(--color-background-secondary); color: var(--color-text-secondary); border: 0.5px solid var(--color-border-tertiary); }
+  .no-match { color: var(--color-text-secondary); font-size: 14px; margin-top: 1rem; text-align: center; padding: 2rem; border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-lg); }
+  .section-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 8px; letter-spacing: 0.03em; }
+  .rank-badge { font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 4px; background: var(--color-background-secondary); color: var(--color-text-secondary); margin-right: 6px; }
+  .rank-badge.r1 { background: #FAC775; color: #633806; }
+  .rank-badge.r2 { background: #D3D1C7; color: #444441; }
+  .rank-badge.r3 { background: #F5C4B3; color: #712B13; }
+  .user-vec-section { margin-top: 1.5rem; padding: 1rem; background: var(--color-background-secondary); border-radius: var(--border-radius-md); }
+  .user-vec-section h3 { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 8px; }
+  .vec-display { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-secondary); word-break: break-all; line-height: 1.8; }
+  .vec-entry { display: inline-block; margin: 2px 4px; padding: 1px 6px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 4px; }
+  .vec-entry.active { background: #E6F1FB; border-color: #B5D4F4; color: #0C447C; }
 </style>
-</head>
-<body>
-<div class="container">
-<div class="hero">
-<h1>Find Your Perfect <span>Tech Career</span></h1>
-<p>TF‑IDF + Cosine Similarity powered career discovery</p>
-</div>
 
-<div class="stats">
-<div class="card stat"><h2>15</h2><p>Career Paths</p></div>
-<div class="card stat"><h2 id="count">0</h2><p>Skills Selected</p></div>
-<div class="card stat"><h2 id="best">—</h2><p>Top Match</p></div>
-</div>
+<div class="rec-wrap">
+  <div class="rec-header">
+    <h1><i class="ti ti-cpu" aria-hidden="true" style="font-size:20px; vertical-align:-2px; margin-right:6px;"></i>Tech Stack Recommender</h1>
+    <p>Select or type your skills — the engine matches you to career paths using TF-IDF + cosine similarity</p>
+  </div>
 
-<input class="search" placeholder="Search skills..." id="search">
+  <div class="section-label">Quick-pick skills</div>
+  <div class="skill-pills" id="pillContainer"></div>
 
-<div class="skills" id="skills"></div>
+  <div class="section-label">Or type custom skills (comma-separated)</div>
+  <div style="display:flex; gap:8px; margin-bottom:16px;">
+    <input type="text" id="customInput" placeholder="e.g. Rust, Kubernetes, GraphQL" style="flex:1;" />
+    <button onclick="addCustomSkills()" style="white-space:nowrap;">Add skills</button>
+  </div>
 
-<button class="main" onclick="runEngine()">Analyze My Profile</button>
+  <div class="section-label">Your selected skills (<span id="countLabel">0</span>)</div>
+  <div class="skill-pills" id="selectedPills" style="min-height:36px; padding:6px; border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md);"></div>
 
-<div id="winner"></div>
-<div id="results"></div>
+  <button class="go-btn" id="goBtn" onclick="runRecommender()" disabled style="margin-top:14px;">
+    <i class="ti ti-sparkles" aria-hidden="true"></i> Get recommendations ↗
+  </button>
+
+  <div id="results"></div>
 </div>
 
 <script>
-const skillsList=["Python","JavaScript","React","Node.js","SQL","Docker","AWS","Azure","TensorFlow","PyTorch","Machine Learning","Kubernetes","HTML","CSS","TypeScript"];
-const roles=[
-{role:"ML Engineer",skills:["Python","Machine Learning","TensorFlow","PyTorch","Docker"]},
-{role:"Frontend Developer",skills:["JavaScript","React","HTML","CSS","TypeScript"]},
-{role:"Backend Developer",skills:["Python","Node.js","SQL","Docker"]},
-{role:"Cloud Architect",skills:["AWS","Azure","Kubernetes","Docker"]},
-{role:"Full Stack Developer",skills:["React","Node.js","SQL","JavaScript","TypeScript"]}
+const CATALOGUE = [
+  { role: "Data Scientist", skills: ["Python","SQL","Machine Learning","Statistics","Pandas","NumPy","Data Analysis","Scikit-learn","Jupyter","Matplotlib","Deep Learning","TensorFlow","Feature Engineering"] },
+  { role: "Frontend Developer", skills: ["JavaScript","HTML","CSS","React","TypeScript","Vue","Angular","Tailwind","Webpack","Figma","UI Design","Responsive Design","REST APIs"] },
+  { role: "Backend Developer", skills: ["Python","Java","Node.js","SQL","APIs","Docker","PostgreSQL","MongoDB","REST","Express","Django","Spring","Microservices"] },
+  { role: "DevOps Engineer", skills: ["Docker","Kubernetes","CI/CD","AWS","Linux","Bash","Git","Terraform","Jenkins","Ansible","Monitoring","Cloud","Nginx"] },
+  { role: "ML Engineer", skills: ["Python","Machine Learning","TensorFlow","PyTorch","Docker","REST APIs","Model Deployment","MLOps","NumPy","Scikit-learn","Deep Learning","Cloud","CUDA"] },
+  { role: "Cloud Architect", skills: ["AWS","Azure","GCP","Kubernetes","Terraform","Networking","Security","Docker","Cloud","Microservices","Load Balancing","CDN","IAM"] },
+  { role: "Cybersecurity Analyst", skills: ["Networking","Linux","Security","Cryptography","Python","Bash","Firewalls","SIEM","Penetration Testing","Risk Assessment","Compliance","Incident Response"] },
+  { role: "Full Stack Developer", skills: ["JavaScript","Python","React","Node.js","SQL","MongoDB","REST APIs","Docker","Git","HTML","CSS","TypeScript","Cloud"] },
+  { role: "Android Developer", skills: ["Kotlin","Java","Android","Firebase","REST APIs","Git","Jetpack Compose","SQL","Material Design","Gradle","Testing","Retrofit"] },
+  { role: "iOS Developer", skills: ["Swift","Objective-C","iOS","Xcode","Firebase","REST APIs","Git","UIKit","SwiftUI","Core Data","Testing","App Store"] },
+  { role: "Blockchain Developer", skills: ["Solidity","Ethereum","Smart Contracts","Web3","JavaScript","Python","Cryptography","Rust","Git","DeFi","NFT","Security"] },
+  { role: "Game Developer", skills: ["C++","Unity","Unreal Engine","C#","Physics","3D Modelling","OpenGL","Game Design","Shaders","AI","Networking","Git"] },
+  { role: "Data Engineer", skills: ["Python","SQL","Spark","Kafka","Airflow","Cloud","Data Pipelines","ETL","BigQuery","Hadoop","AWS","Docker","Scala"] },
+  { role: "AI/ML Research Engineer", skills: ["Python","PyTorch","TensorFlow","Mathematics","Statistics","Deep Learning","NLP","Computer Vision","Research","CUDA","Transformers","LLMs"] },
+  { role: "React Native Developer", skills: ["React","JavaScript","TypeScript","React Native","Firebase","REST APIs","Expo","Git","Mobile","Redux","Testing","Node.js"] },
 ];
-const selected=new Set();
-const skills=document.getElementById("skills");
 
-function render(list=skillsList){
-skills.innerHTML="";
-list.forEach(s=>{
-const el=document.createElement("div");
-el.className="chip"+(selected.has(s)?" active":"");
-el.innerText=s;
-el.onclick=()=>{
-selected.has(s)?selected.delete(s):selected.add(s);
-document.getElementById("count").innerText=selected.size;
-render(filter());
-};
-skills.appendChild(el);
-});
+const SUGGESTION_SKILLS = [...new Set(CATALOGUE.flatMap(c => c.skills))].sort();
+let selected = new Set();
+
+function buildPills() {
+  const container = document.getElementById('pillContainer');
+  const common = ["Python","JavaScript","React","SQL","Docker","Machine Learning","Node.js","TypeScript","AWS","Kubernetes","Git","Java","TensorFlow","Flutter","Swift","Kotlin","Rust","Go","C++","C#"];
+  common.forEach(s => {
+    const p = document.createElement('span');
+    p.className = 'pill';
+    p.textContent = s;
+    p.dataset.skill = s;
+    p.onclick = () => toggleSkill(s, p);
+    container.appendChild(p);
+  });
 }
 
-function filter(){
-const q=document.getElementById("search").value.toLowerCase();
-return skillsList.filter(s=>s.toLowerCase().includes(q));
+function toggleSkill(skill, pillEl) {
+  if (selected.has(skill)) {
+    selected.delete(skill);
+    if (pillEl) pillEl.classList.remove('selected');
+  } else {
+    selected.add(skill);
+    if (pillEl) pillEl.classList.add('selected');
+  }
+  renderSelected();
 }
 
-document.getElementById("search").oninput=()=>render(filter());
-
-function cosine(a,b,terms){
-let dot=0,ma=0,mb=0;
-terms.forEach(t=>{
-dot+=(a[t]||0)*(b[t]||0);
-ma+=(a[t]||0)**2;
-mb+=(b[t]||0)**2;
-});
-return ma&&mb?dot/(Math.sqrt(ma)*Math.sqrt(mb)):0;
+function addCustomSkills() {
+  const raw = document.getElementById('customInput').value;
+  raw.split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
+    const normalised = SUGGESTION_SKILLS.find(x => x.toLowerCase() === s.toLowerCase()) || s;
+    selected.add(normalised);
+  });
+  document.getElementById('customInput').value = '';
+  document.querySelectorAll('#pillContainer .pill').forEach(p => {
+    if (selected.has(p.dataset.skill)) p.classList.add('selected');
+    else p.classList.remove('selected');
+  });
+  renderSelected();
 }
 
-function runEngine(){
-const docs=roles.map(r=>r.skills);
-const all=[...new Set(docs.flat())];
-const idf={};
-all.forEach(t=>{
-const df=docs.filter(d=>d.includes(t)).length;
-idf[t]=Math.log(docs.length/(df+1))+1;
-});
-
-const uv={};
-all.forEach(t=>uv[t]=selected.has(t)?idf[t]:0);
-
-const scored=roles.map(r=>{
-const vec={};
-all.forEach(t=>vec[t]=r.skills.includes(t)?idf[t]:0);
-return {...r,score:cosine(uv,vec,all)};
-}).sort((a,b)=>b.score-a.score);
-
-document.getElementById("best").innerText=Math.round(scored[0].score*100)+"%";
-
-document.getElementById("winner").style.display="block";
-document.getElementById("winner").innerHTML=`🏆 <h2>${scored[0].role}</h2><p>${(scored[0].score*100).toFixed(1)}% Match</p>`;
-
-const results=document.getElementById("results");
-results.innerHTML="";
-scored.forEach(r=>{
-const pct=(r.score*100).toFixed(1);
-results.innerHTML+=`
-<div class="role">
-<h3>${r.role}</h3>
-<p>${pct}% Compatibility</p>
-<div class="bar"><div class="fill" style="width:${pct}%"></div></div>
-</div>`;
-});
+function renderSelected() {
+  const container = document.getElementById('selectedPills');
+  container.innerHTML = '';
+  selected.forEach(s => {
+    const p = document.createElement('span');
+    p.className = 'pill selected';
+    p.innerHTML = s + ' <i class="ti ti-x" style="font-size:11px;" aria-hidden="true"></i>';
+    p.onclick = () => {
+      selected.delete(s);
+      document.querySelectorAll('#pillContainer .pill').forEach(pp => {
+        if (pp.dataset.skill === s) pp.classList.remove('selected');
+      });
+      renderSelected();
+    };
+    container.appendChild(p);
+  });
+  document.getElementById('countLabel').textContent = selected.size;
+  document.getElementById('goBtn').disabled = selected.size < 1;
 }
-render();
+
+function computeTFIDF() {
+  const docs = CATALOGUE.map(c => c.skills);
+  const N = docs.length;
+  const allTerms = [...new Set(docs.flat())];
+  const idf = {};
+  allTerms.forEach(t => {
+    const df = docs.filter(d => d.includes(t)).length;
+    idf[t] = Math.log(N / (df + 1)) + 1;
+  });
+  const vectors = docs.map(doc => {
+    const vec = {};
+    allTerms.forEach(t => {
+      const tf = doc.filter(x => x === t).length / doc.length;
+      vec[t] = tf * idf[t];
+    });
+    return vec;
+  });
+  const userSkills = [...selected];
+  const userVec = {};
+  allTerms.forEach(t => {
+    const norm = userSkills.find(s => s.toLowerCase() === t.toLowerCase());
+    if (norm) {
+      const tf = 1 / userSkills.length;
+      userVec[t] = tf * idf[t];
+    } else {
+      userVec[t] = 0;
+    }
+  });
+  return { vectors, userVec, allTerms, idf };
+}
+
+function cosine(a, b, terms) {
+  let dot = 0, magA = 0, magB = 0;
+  terms.forEach(t => {
+    dot += (a[t] || 0) * (b[t] || 0);
+    magA += (a[t] || 0) ** 2;
+    magB += (b[t] || 0) ** 2;
+  });
+  if (magA === 0 || magB === 0) return 0;
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+function runRecommender() {
+  if (selected.size === 0) return;
+  const { vectors, userVec, allTerms, idf } = computeTFIDF();
+  const scored = CATALOGUE.map((item, i) => {
+    const score = cosine(userVec, vectors[i], allTerms);
+    const matched = item.skills.filter(s => [...selected].some(u => u.toLowerCase() === s.toLowerCase()));
+    const others = item.skills.filter(s => !matched.includes(s)).slice(0, 4);
+    return { ...item, score, matched, others };
+  }).sort((a, b) => b.score - a.score);
+
+  const top3 = scored.slice(0, 3);
+  const userSkills = [...selected];
+  const activeTerms = allTerms.filter(t => userSkills.some(s => s.toLowerCase() === t.toLowerCase()));
+
+  let html = '<div class="results">';
+  html += '<div class="section-label" style="margin-bottom:12px;">Top matches for your profile</div>';
+
+  const rankClass = ['r1','r2','r3'];
+  const rankLabel = ['1st','2nd','3rd'];
+
+  top3.forEach((item, idx) => {
+    const pct = (item.score * 100).toFixed(1);
+    const isTop = idx === 0;
+    html += `<div class="result-card ${isTop ? 'top' : ''}">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;">
+          <span class="rank-badge ${rankClass[idx]}">${rankLabel[idx]}</span>
+          <span class="role-name">${item.role}</span>
+        </div>
+        <span class="score-badge ${isTop ? 'top' : ''}">${pct}% match</span>
+      </div>
+      <div class="match-bar-wrap">
+        <div class="match-bar-bg"><div class="match-bar-fill ${isTop ? 'top' : ''}" style="width:${Math.min(parseFloat(pct),100)}%"></div></div>
+      </div>
+      <div class="matched-tags">`;
+    item.matched.forEach(t => { html += `<span class="tag match"><i class="ti ti-check" style="font-size:10px;" aria-hidden="true"></i> ${t}</span>`; });
+    item.others.forEach(t => { html += `<span class="tag other">${t}</span>`; });
+    html += `</div></div>`;
+  });
+
+  html += `<div class="user-vec-section">
+    <h3><i class="ti ti-vector" aria-hidden="true" style="font-size:14px; vertical-align:-1px; margin-right:5px;"></i>Your TF-IDF user vector (active dimensions only)</h3>
+    <div class="vec-display">`;
+  activeTerms.forEach(t => {
+    const val = (userVec[t] || 0).toFixed(3);
+    html += `<span class="vec-entry active">${t}: ${val}</span>`;
+  });
+  html += `</div></div></div>`;
+
+  document.getElementById('results').innerHTML = html;
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.match-bar-fill').forEach(bar => {
+      const w = bar.style.width;
+      bar.style.width = '0%';
+      requestAnimationFrame(() => { bar.style.width = w; });
+    });
+  });
+}
+
+buildPills();
 </script>
-</body>
-</html>
